@@ -11,7 +11,7 @@ class Send
 	@@last_exception = nil
 
 	def self.request (url, options = {})
-		options[:useragent] = 'Mozilla/4.0 (compatible; MSIE 8.0; Windows NT 5.1; Trident/4.0) ' if options[:useragent].nil?
+		options[:useragent] ||= 'Mozilla/4.0 (compatible; MSIE 8.0; Windows NT 5.1; Trident/4.0) '
 
 		begin
 			uri = URI.parse(url)
@@ -19,37 +19,28 @@ class Send
 			request = Net::HTTP::Post.new(uri.request_uri, 'User-Agent' => options[:useragent])
 			request.set_form_data(options[:data])
 			@@last_response = http.request(request)
-
-			if '200' == @@last_response.code then
-				return @@last_response.body
-			else
-				@@last_exception = @@last_response.code
-				return nil
-			end
+      return @@last_response.body if @@last_response.code == '200'
+      
+      @@last_exception = @@last_response.code
 		rescue Exception => e
 			@@last_exception = e
-			return nil
 		end
+    
+    return nil
 	end
 
 	def self.error
-		if @@last_exception.kind_of?(String) then
-			return @@last_exception
-		else
-			return @@last_exception.message
-		end
+    return @@last_exception if @@last_exception.kind_of?(String)
+    return @@last_exception.message
 	end
 
 	def self.debug
-		if @@last_exception.kind_of?(String) then
-			return 'HTTP_ERROR'
-		else
-			return @@last_exception.backtrace.inspect
-		end
+    return 'HTTP_ERROR' if @@last_exception.kind_of?(String)
+    return @@last_exception.backtrace.inspect
 	end
 end
 
 # how to use
-response = Send.request('http://google.com', data: { hello: 'world.' } )
+response = Send.request('http://localhost:4567', {data: { p: 'world.' }} )
 response = Send.error if response.nil?
 puts response
